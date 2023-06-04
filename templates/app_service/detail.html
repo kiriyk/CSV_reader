@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="detail-file-wrapper">
+        <h1>File "{{ file.file.name|slice:"10:-4" }}" detail page</h1>
+        <form method="get">
+            <label for="filter_column">Filter Column:</label>
+            <select id="filter_column" name="filter_column">
+                {% for column in header %}
+                    <option value="{{ column }}" {% if column == filter_column %}selected{% endif %}>{{ column }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="filter_value">Filter Value:</label>
+            <input type="text" id="filter_value" name="filter_value"
+                   {% if filter_value %}value="{{ filter_value }}"
+                   {% else %}value=""
+                   {% endif %}>
+
+            <table>
+            {% for column in header %}
+                <tr>
+                    <td>
+                        <label for="sort_column{{ forloop.counter }}">{{ column }}</label>
+                        <input type="checkbox" id="sort_column{{ forloop.counter }}" name="sort_column{{ forloop.counter }}" value="{{ column }}">
+                    </td>
+                    <td>
+                        <label for="sort_order{{ forloop.counter }}">asc</label>
+                        <input type="radio" name="sort_order{{ forloop.counter }}" id="sort_order{{ forloop.counter }}" value="asc">
+                        <label for="sort_order{{ forloop.counter }}">desc</label>
+                        <input type="radio" name="sort_order{{ forloop.counter }}" id="sort_order{{ forloop.counter }}" value="desc">
+                    </td>
+                </tr>
+            {% endfor %}
+            </table>
+            <button type="submit">Apply Filter</button>
+            <a href="{% url 'file-detail' file_id %}">Reset</a>
+        </form>
+        <p>Current Filter: {{ filter_column }} = {{ filter_value }}</p>
+        <p>Current Sort:
+            {% for sort_order in sort_orders_list %}
+            {% for param, value in sort_order.items %}
+            {{ param }} - {{ value }}
+            {% endfor %}
+            {% endfor %}
+        </p>
+        <table style="width: 100%">
+            <thead>
+                <tr>
+                    {% for column in header %}
+                    <th>
+                      <a href="?sort_columns={{ column }}&sort_order=asc">
+                        {{ column }}
+                      </a>
+                      <a href="?sort_columns={{ column }}&sort_order=desc">
+                        &#9660;
+                      </a>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in page_obj %}
+                <tr>
+                    {% for value in row %}
+                    <td style="text-align: center">{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+            <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{{ sort_params }}">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}{{ sort_params }}">Previous</a>
+            {% endif %}
+
+            <span class="current-page">{{ page_obj.number }}</span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{{ sort_params }}">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{{ sort_params }}">Last</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

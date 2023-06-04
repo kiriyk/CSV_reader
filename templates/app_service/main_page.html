@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="main-page-wrapper">
+        <h1>List of uploaded files</h1>
+        {% for file in files %}
+            {% url 'file-detail' file.id as file_url %}
+            <p>{{ file.file.id }}</p>
+            <h2><a href="{{ file_url }}">{{ file.file_name }}</a></h2>
+            <p>File contains such columns as:</p>
+            {{ file.columns|unordered_list }}
+        {% endfor %}
+    </div>
+{% endblock %}

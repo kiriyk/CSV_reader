@@ -1,0 +1,20 @@
+{% load static %}
+{% block head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV viewer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+{% endblock %}
+{% block body %}
+<body>
+    {% block header %}
+        {% include 'header.html' %}
+    {% endblock %}
+    {% block content %}
+    {% endblock %}
+</body>
+</html>
+{% endblock %}

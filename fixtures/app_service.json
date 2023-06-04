@@ -1,0 +1,1 @@
+[{"model": "app_service.csvfile", "pk": 1, "fields": {"file": "csv_files/exercise_dataset.csv", "uploaded": "2023-06-04", "user": 1}}, {"model": "app_service.csvfile", "pk": 2, "fields": {"file": "csv_files/Population_Growth.csv", "uploaded": "2023-06-04", "user": 1}}]

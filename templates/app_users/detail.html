@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="profile-wrapper">
+        <h1>User {{ request.user.username }} info:</h1>
+        <ul>
+            <li>
+                <strong>First name:</strong><span>{{ request.user.first_name }}</span>
+            </li>
+            <li>
+                <strong>Username:</strong><span>{{ request.user.username }}</span>
+            </li>
+        </ul>
+        <h2>Uploaded files:</h2>
+        <ol>
+            {% for file in files %}
+            <li>
+                <strong>{{ file.file.name|slice:"10:-4" }}</strong>
+                <span>Uploaded at {{ file.uploaded }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+{% endblock %}
