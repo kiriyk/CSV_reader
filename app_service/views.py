@@ -1,12 +1,14 @@
+import csv
+import re
+import pandas as pd
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.views import generic
+
 from .forms import FileUploadForm
 from .models import CSVFile
-
-import re
-import csv
 
 
 class MainPageView(generic.TemplateView):
@@ -69,31 +71,33 @@ class FileDetailView(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         file = context['file']
+        df = pd.read_csv(file.file.path)
+
         filter_column = self.request.GET.get('filter_column') if self.request.GET.get('filter_column') else ''
         filter_value = self.request.GET.get('filter_value') if self.request.GET.get('filter_value') else ''
         sort_columns = self.request.GET.get('sort_columns') if self.request.GET.get('sort_columns') else []
         sort_orders = self.request.GET.get('sort_orders') if self.request.GET.get('sort_orders') else []
         query_string = self.get_query_string()
 
-        data, header = self.get_sort_query(file, sort_columns, sort_orders, filter_column, filter_value)
+        df = self.get_sort_query(file, sort_columns, sort_orders, filter_column, filter_value, df)
 
-        paginator = Paginator(data, self.paginate_by)
+        paginator = Paginator(df, self.paginate_by)
         page_number = self.request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
         context['page_obj'] = page_obj
-        context['header'] = header
         context['filter_column'] = filter_column
         context['filter_value'] = str(filter_value)
-        context['sort_orders_list'] = [{column: order} for column, order in zip(sort_columns, sort_orders)]
         context['file_id'] = file.id
         context['sort_params'] = query_string if query_string else ''
+        context['data'] = df
+        context['sort_orders_dict'] = {column: order for column, order in zip(sort_columns, sort_orders)}
 
         return context
 
     def get_query_string(self):
         pattern_search = r'\?(.*)'
-        pattern_modify = r'&?page=\d+?'
+        pattern_modify = r'&?page=\d+'
         query_string = re.search(pattern_search, self.request.get_full_path())
         if query_string:
             query_string = '&' + query_string.group(1)
@@ -101,34 +105,31 @@ class FileDetailView(generic.DetailView):
 
         return query_string
 
-    def get_sort_query(self, file, sort_columns, sort_orders, filter_column, filter_value):
-        with open(file.file.path, 'r') as csv_file:
-            csv_reader = csv.reader(csv_file)
-            header = next(csv_reader)
-            data = [row for row in csv_reader]
+    def get_sort_query(self, file, sort_columns, sort_orders, filter_column, filter_value, df):
+        if filter_value.isdigit():
+            filter_value = float(filter_value)
 
-        for key, value in self.request.GET.items():
-            if key.startswith('sort_column'):
-                sort_columns.append(value)
-            elif key.startswith('sort_order'):
-                sort_orders.append(value)
-
-        filtered_data = []
         if filter_column and filter_value:
-            filter_column_index = header.index(filter_column)
-            for row in data:
-                if str(row[filter_column_index]) == filter_value:
-                    filtered_data.append(row)
-            data = filtered_data
+            df = df.loc[df[filter_column] == filter_value]
 
-        for column, order in zip(sort_columns, sort_orders):
-            if column in header:
-                column_index = header.index(column)
-                if column.lower() == 'id' and all(row[column_index].isdigit() for row in data):
-                    data.sort(key=lambda x: int(x[column_index]), reverse=(order == 'desc'))
-                else:
-                    data.sort(key=lambda x: x[column_index], reverse=(order == 'desc'))
+        sort_param = []
+        for key, value in self.request.GET.items():
+            if key.startswith('sort_param'):
+                sort_param.append(value)
 
-        return data, header
+        sort_param = [param.split(',') for param in sort_param]
+        for column, order in sort_param:
+            sort_columns.append(column)
+            sort_orders.append(order)
+
+        if filter_column in sort_columns:
+            idx = sort_columns.index(filter_column)
+            sort_columns.remove(filter_column)
+            sort_orders.pop(idx)
+
+        sort_orders = [bool(sort_order) for sort_order in sort_orders]
+        filtered_df = df.sort_values(by=sort_columns, ascending=sort_orders)
+
+        return filtered_df
 
 

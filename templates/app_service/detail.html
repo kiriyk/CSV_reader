@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
+{% load custom_tags %}
 {% block content %}
     <div class="detail-file-wrapper">
         <h1>File "{{ file.file.name|slice:"10:-4" }}" detail page</h1>
         <form method="get">
             <label for="filter_column">Filter Column:</label>
             <select id="filter_column" name="filter_column">
-                {% for column in header %}
+                <option value="" hidden=""></option>
+                {% for column in data.columns %}
                     <option value="{{ column }}" {% if column == filter_column %}selected{% endif %}>{{ column }}</option>
                 {% endfor %}
             </select>
@@ -17,17 +19,16 @@
                    {% endif %}>
 
             <table>
-            {% for column in header %}
+            {% for column in data.columns %}
                 <tr>
                     <td>
-                        <label for="sort_column{{ forloop.counter }}">{{ column }}</label>
-                        <input type="checkbox" id="sort_column{{ forloop.counter }}" name="sort_column{{ forloop.counter }}" value="{{ column }}">
+                        {{ column }}
                     </td>
                     <td>
                         <label for="sort_order{{ forloop.counter }}">asc</label>
-                        <input type="radio" name="sort_order{{ forloop.counter }}" id="sort_order{{ forloop.counter }}" value="asc">
+                        <input type="radio" name="sort_param{{ forloop.counter }}" id="sort_param{{ forloop.counter }}" value="{{ column }},1" {% if column in sort_orders_dict.keys and sort_orders_dict|dict_key:column != '' %}checked{% endif %}>
                         <label for="sort_order{{ forloop.counter }}">desc</label>
-                        <input type="radio" name="sort_order{{ forloop.counter }}" id="sort_order{{ forloop.counter }}" value="desc">
+                        <input type="radio" name="sort_param{{ forloop.counter }}" id="sort_param{{ forloop.counter }}" value="{{ column }}," {% if column in sort_orders_dict.keys and sort_orders_dict|dict_key:column == '' %}checked{% endif %}>
                     </td>
                 </tr>
             {% endfor %}
@@ -35,31 +36,31 @@
             <button type="submit">Apply Filter</button>
             <a href="{% url 'file-detail' file_id %}">Reset</a>
         </form>
-        <p>Current Filter: {{ filter_column }} = {{ filter_value }}</p>
+        <p>Current Filter:
+            {% if filter_column and filter_value %}
+                {{ filter_column }} = {{ filter_value }}
+            {% else %}
+            {% endif %}
+        </p>
         <p>Current Sort:
-            {% for sort_order in sort_orders_list %}
-            {% for param, value in sort_order.items %}
-            {{ param }} - {{ value }}
-            {% endfor %}
+            {% for param, value in sort_orders_dict.items %}
+                {{ param }} -
+                {% if value == '' %}descending{% else %}ascending{% endif %}
+            {% if not forloop.last %},{% endif %}
             {% endfor %}
         </p>
         <table style="width: 100%">
             <thead>
                 <tr>
-                    {% for column in header %}
+                    {% for column in data.columns %}
                     <th>
-                      <a href="?sort_columns={{ column }}&sort_order=asc">
-                        {{ column }}
-                      </a>
-                      <a href="?sort_columns={{ column }}&sort_order=desc">
-                        &#9660;
-                      </a>
-                    </th>
+                      {{ column }}
+                                          </th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
-                {% for row in page_obj %}
+                {% for _, row in page_obj.object_list.iterrows %}
                 <tr>
                     {% for value in row %}
                     <td style="text-align: center">{{ value }}</td>
